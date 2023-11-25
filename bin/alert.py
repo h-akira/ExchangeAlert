@@ -11,7 +11,7 @@ sys.path.append(
     "/../lib/google_api_operator"
   )
 )
-from  google_api_operator.authentication import get_service
+from google_api_operator.authentication import get_service
 from google_api_operator.gmail import send_mail
 from google.auth.exceptions import RefreshError
 import json

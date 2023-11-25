@@ -33,7 +33,8 @@ def parse_args():
   parser.add_argument("--log", metavar="log-file", default=os.path.join(os.path.dirname(__file__), "../secret/log.txt"), help="output file")
   parser.add_argument("-t", "--token", metavar="Path", default=os.path.join(os.path.dirname(__file__),"../secret/token.json"), help="token.json（存在しない場合は生成される）")
   parser.add_argument("-c", "--credentials", metavar="Path", default=os.path.join(os.path.dirname(__file__),"../secret/credentials.json"), help="credentials.json（client_secret_hogehoge.json）")
-  # parser.add_argument("-", "--", action="store_true", help="")
+  parser.add_argument("-r", "--re-authentication", action="store_true", help="token.jsonを削除して再認証する")
+  parser.add_argument("-s", "--service", action="store_true", help="通知メールを送信しない場合でもtokenが有効かどうか確認のためserviceを取得する")
   parser.add_argument("file", metavar="json-file", help="json file")
   options = parser.parse_args()
   if not os.path.isfile(options.file): 
@@ -46,6 +47,9 @@ def parse_args():
         f.write("")
     else:
       options.log = None
+  if os.path.isfile(options.token) and options.re_authentication:
+    print(f"Delete `{options.token}` to re-authenticate.")
+    os.remove(options.token)
   return options
 
 def cross_checker(df, long=20, short=9, inclination=False):
@@ -135,7 +139,7 @@ def main():
       message += "\n{}: {}".format(pair, cross)
   
   # send mail
-  if send or not os.path.isfile(options.token):
+  if send or not os.path.isfile(options.token) or options.service:
     SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
     service = get_service(
       SCOPES, 

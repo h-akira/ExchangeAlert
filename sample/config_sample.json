@@ -1,0 +1,31 @@
+{
+  "yfinance":{
+    "timezone":"Asia/Tokyo",
+    "tickers":[
+      "USDJPY=X",
+      "EURJPY=X",
+      "GBPJPY=X",
+      "AUDJPY=X",
+      "EURUSD=X",
+      "GBPUSD=X",
+      "AUDUSD=X",
+      "EURGBP=X"
+    ]
+  },
+  "checker":{
+    "cross":{
+      "period":{
+        "short":9,
+        "long":20
+      },
+      "inclination":0
+    }
+  },
+  "mail":{
+    "To":"hogehoge.0000@hoge.com",
+    "Bcc":[
+      "hogehoge.0001@hoge.com",
+      "hogehoge.0001@hoge.com"
+    ]
+  }
+}

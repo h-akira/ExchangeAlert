@@ -206,19 +206,18 @@ def main(options):
       options.token,
       "gmail",
       "v1",
-      if_RefreshError=True
     )
     if send:
-      args = {
+      kwargs = {
         "service": service,
         "Subject": "Exchange Alert",
         "Message": message,
       }
       if config["mail"]["To"]:
-        args["To"] = config["mail"]["To"]
+        kwargs["To"] = config["mail"]["To"]
       if config["mail"]["Bcc"]:
-        args["Bcc"] = config["mail"]["Bcc"]
-      send_mail(**args)
+        kwargs["Bcc"] = config["mail"]["Bcc"]
+      send_mail(**kwargs)
       print("Sent mail. Message is below.")
       print(message)
     return True  # Trueを返すと`Successed`，Falseを返すと`Failed`になる．

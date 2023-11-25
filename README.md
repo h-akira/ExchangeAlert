@@ -31,7 +31,7 @@ GoogleのAPIを用いるため，
 問に対し`y`を入力するのと，
 googleアカウントへのログインが必要．
 ```
-bin/alert.py config.json
+./bin/alert.py config.json
 ```
 デフォルトでは15分足でチェックするが，`--interval 5m`などとすることで
 変更可能．ただし，選択できるのは

@@ -37,7 +37,9 @@ def parse_args():
   parser.add_argument("file", metavar="json-file", help="json file")
   options = parser.parse_args()
   if not os.path.isfile(options.file): 
-    raise Exception("The input file does not exist.") 
+    raise Exception("The json file does not exist.") 
+  if not os.path.isfile(options.credentials):
+    raise Exception("The credentials file does not exist.")
   if not os.path.isfile(options.log):
     if "y" == input(f"The log file `{options.log}` does not exist. \nCreate it? [y/other] : "):
       with open(options.log, mode="w") as f:
@@ -133,7 +135,7 @@ def main():
       message += "\n{}: {}".format(pair, cross)
   
   # send mail
-  if send:
+  if send or not os.path.isfile(options.token):
     SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
     service = get_service(
       SCOPES, 
@@ -143,18 +145,19 @@ def main():
       "v1",
       if_RefreshError=True
     )
-    args = {
-      "service": service,
-      "Subject": "Exchange Alert",
-      "Message": message,
-    }
-    if config["mail"]["To"]:
-      args["To"] = config["mail"]["To"]
-    if config["mail"]["Bcc"]:
-      args["Bcc"] = config["mail"]["Bcc"]
-    send_mail(**args)
-    print("Sent mail. Message is below.")
-    print(message)
+    if send:
+      args = {
+        "service": service,
+        "Subject": "Exchange Alert",
+        "Message": message,
+      }
+      if config["mail"]["To"]:
+        args["To"] = config["mail"]["To"]
+      if config["mail"]["Bcc"]:
+        args["Bcc"] = config["mail"]["Bcc"]
+      send_mail(**args)
+      print("Sent mail. Message is below.")
+      print(message)
 
 if __name__ == '__main__':
   main()

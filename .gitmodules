@@ -1,0 +1,3 @@
+[submodule "lib/google_api_operator"]
+	path = lib/google_api_operator
+	url = git@github.com:h-akira/google_api_operator.git

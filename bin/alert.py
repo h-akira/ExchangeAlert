@@ -44,6 +44,7 @@ def parse_args():
   parser.add_argument("-f", "--force-execution", action="store_true", help="state fileを削除して強制実行する")
   parser.add_argument("-r", "--re-authenticate", action="store_true", help="token fileを削除して再認証する")
   parser.add_argument("-s", "--service", action="store_true", help="通知メールを送信しない場合でもtokenが有効かどうか確認のためserviceを取得する")
+  parser.add_argument("-d", "--debug", action="store_true", help="debug (don't use Try and Except)")
   parser.add_argument("--no-stdout", action="store_true", help="no stdout")
   parser.add_argument("file", metavar="json-file", help="json file")
   options = parser.parse_args()
@@ -157,7 +158,8 @@ def main(options):
   if options.log:
     with open(options.log, mode="r") as f:
       log = f.readlines()
-  end = datetime.datetime.now(timezone(config["yfinance"]["timezone"]))-datetime.timedelta(seconds=options.plenty)
+  now = datetime.datetime.now(timezone(config["yfinance"]["timezone"]))
+  end = now -datetime.timedelta(seconds=options.plenty)
   if "m" in options.interval or options.interval == "1h":
     start = end-datetime.timedelta(days=6)
   elif options.interval == "1d":
@@ -170,6 +172,7 @@ def main(options):
     start = end-datetime.timedelta(days=365*6)
   message = "=== Exchange Alert ==="
   send = False
+  now_logged = False
   for ticker in config["yfinance"]["tickers"]:
     print("ticker: {}".format(ticker))
     pair = ticker[:3]+"/"+ticker[3:6]
@@ -181,12 +184,16 @@ def main(options):
     )
     latest = df.index[-1]
     if options.log:
+      f = open(options.log, mode="a")
+      if not now_logged:
+        f.write(f"{now}\n")
+        now_logged = True
       if f"{pair}: {latest}\n" in log:
         print("skip")
         continue
       else:
-        with open(options.log, mode="a") as f:
-          f.write(f"{pair}: {latest}\n")
+        f.write(f"{pair}: {latest}\n")
+      f.close()
     cross = cross_checker(
       df,
       long=config["checker"]["cross"]["period"]["long"],
@@ -220,19 +227,24 @@ def main(options):
       send_mail(**kwargs)
       print("Sent mail. Message is below.")
       print(message)
-    return True  # Trueを返すと`Successed`，Falseを返すと`Failed`になる．
+  return True  # Trueを返すと`Successed`，Falseを返すと`Failed`になる．
 
 if __name__ == '__main__':
   options = parse_args()
   if options.no_stdout:
     sys.stdout = open(os.devnull, 'w')
-  try:
+  if options.debug:
     preprocessing(options)
     success = main(options)
     postprocessiong(options, success=success)
-  except RefreshError:
-    postprocessiong(options, error=True, token=True)
-  except SystemExit:
-    pass
-  except:
-    postprocessiong(options, error=True)
+  else:
+    try:
+      preprocessing(options)
+      success = main(options)
+      postprocessiong(options, success=success)
+    except RefreshError:
+      postprocessiong(options, error=True, token=True)
+    except SystemExit:
+      pass
+    except:
+      postprocessiong(options, error=True)

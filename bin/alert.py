@@ -7,8 +7,8 @@ import sys
 import os
 sys.path.append(
   os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "/../lib/google_api_operator"
+    os.path.dirname(__file__),
+    "../lib/google_api_operator"
   )
 )
 from google_api_operator.authentication import get_service

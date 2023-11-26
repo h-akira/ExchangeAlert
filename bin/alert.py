@@ -172,7 +172,9 @@ def main(options):
     start = end-datetime.timedelta(days=365*6)
   message = "=== Exchange Alert ==="
   send = False
-  now_logged = False
+  if options.log:
+    with open(options.log, mode="a") as f:
+      f.write(f"{now}, interval: {options.interval}\n")
   for ticker in config["yfinance"]["tickers"]:
     print("ticker: {}".format(ticker))
     pair = ticker[:3]+"/"+ticker[3:6]
@@ -184,16 +186,12 @@ def main(options):
     )
     latest = df.index[-1]
     if options.log:
-      f = open(options.log, mode="a")
-      if not now_logged:
-        f.write(f"{now}\n")
-        now_logged = True
       if f"{pair}: {latest}\n" in log:
         print("skip")
         continue
       else:
-        f.write(f"{pair}: {latest}\n")
-      f.close()
+        with open(options.log, mode="a") as f:
+          f.write(f"{pair}: {latest}\n")
     cross = cross_checker(
       df,
       long=config["checker"]["cross"]["period"]["long"],

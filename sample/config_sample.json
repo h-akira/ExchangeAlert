@@ -19,6 +19,10 @@
         "long":20
       },
       "inclination":0
+    },
+    "big_movement":{
+      "period":15,
+      "threshold":5
     }
   },
   "mail":{

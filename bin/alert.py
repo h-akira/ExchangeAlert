@@ -35,17 +35,21 @@ def parse_args():
     default="15m", 
     help="interval"
   )
-  parser.add_argument("-p", "--plenty", metavar="seconds", type=int, default=5, help="現在時刻を何秒前とするか")
+  parser.add_argument("-p", "--plenty", metavar="seconds", type=int, default=5, help="how many seconds ago to get data")
   parser.add_argument("--log", metavar="log-file", default=os.path.join(os.path.dirname(__file__), "../secret/log.txt"), help="log file")
+  parser.add_argument("--log-rows", metavar="rows", type=int, help="max rows of log file")
   parser.add_argument("--error-log", metavar="error-log-file", default=os.path.join(os.path.dirname(__file__), "../secret/error.txt"), help="log file")
   parser.add_argument("--state", metavar="state-file", default=os.path.join(os.path.dirname(__file__),"../secret/state.txt"), help="state file")
   parser.add_argument("-t", "--token", metavar="Path", default=os.path.join(os.path.dirname(__file__),"../secret/token.json"), help="token.json（存在しない場合は生成される）")
   parser.add_argument("-c", "--credentials", metavar="Path", default=os.path.join(os.path.dirname(__file__),"../secret/credentials.json"), help="credentials.json（client_secret_hogehoge.json）")
-  parser.add_argument("-f", "--force-execution", action="store_true", help="state fileを削除して強制実行する")
-  parser.add_argument("-r", "--re-authenticate", action="store_true", help="token fileを削除して再認証する")
-  parser.add_argument("-s", "--service", action="store_true", help="通知メールを送信しない場合でもtokenが有効かどうか確認のためserviceを取得する")
-  parser.add_argument("-d", "--debug", action="store_true", help="debug (don't use Try and Except)")
+  parser.add_argument("-f", "--force-execution", action="store_true", help="remove state file and force execution")
+  parser.add_argument("-r", "--re-authenticate", action="store_true", help="remove token file and re-authenticate")
+  parser.add_argument("-s", "--service", action="store_true", help="get service even if you don't send a notification email")
+  parser.add_argument("-d", "--debug", action="store_true", help="debug (don't use Try and Except and log file and state file)")
   parser.add_argument("--no-stdout", action="store_true", help="no stdout")
+  parser.add_argument("--cross", action="store_true", help="check golden cross and dead cross")
+  parser.add_argument("--big-movement", action="store_true", help="check big movement")
+  parser.add_argument("--milestone", action="store_true", help="check approaching and breakthrough milestones")
   parser.add_argument("file", metavar="json-file", help="json file")
   options = parser.parse_args()
   if not os.path.isfile(options.file): 
@@ -64,6 +68,9 @@ def parse_args():
   if options.force_execution and os.path.isfile(options.state):
     print(f"Delete `{options.state}` to force execution.")
     os.remove(options.state)
+  if options.debug:
+    options.log = False
+    options.state = False
   return options
 
 def cross_checker(df, long=20, short=9, inclination=False):
@@ -97,12 +104,69 @@ def cross_checker(df, long=20, short=9, inclination=False):
         return "golden cross"
   elif dead:
     if not long_increasing and not short_increasing:
-      return "dead cross (both inclination value are negative))"
+      return "dead cross (both inclination value are negative)"
     else:
       if inclination:
         return None
       else:
         return "dead cross"
+  else:
+    return None
+
+def milestone_checker(df):
+  if 50 < df["Close"].iloc[-1] < 300:
+    div = 1
+  elif 0.5 < df["Close"].iloc[-1] < 3:
+    div = 0.01
+  else:
+    raise ValueErrur("invalid scale")
+  delta = df["Close"].iloc[-1] - df["Close"].iloc[-2]
+  if df["Close"].iloc[-1] // div != df["Close"].iloc[-2] // div:
+    if delta > 0:
+      for i in range(1,df.shape[0]):
+        if df["Close"].iloc[-1-i] > df["Close"].iloc[-1] // div * div:
+          return None
+        if df["Close"].iloc[-1-i] < df["Close"].iloc[-1] // div * div - div * 0.1:
+          return f"passed a milestone ({df['Close'].iloc[-2]} -> {df['Close'].iloc[-1]})"
+      else:
+        return None
+    elif delta < 0:
+      for i in range(1, df.shape[0]):
+        if df["Close"].iloc[-1-i] < df["Close"].iloc[-2] // div * div:
+          return None
+        if df["Close"].iloc[-1-i] > df["Close"].iloc[-2] // div * div + div * 0.1:
+          return f"passed a milestone ({df['Close'].iloc[-2]} -> {df['Close'].iloc[-1]})"
+      else:
+        return None
+  else:
+    if delta > 0 and df["Close"].iloc[-1] % div > div * 0.9:
+      for i in range(1, df.shape[0]):
+        if df["Close"].iloc[-1-i] > df["Close"].iloc[-1] // div * div + 0.9 * div:
+          return None
+        if df["Close"].iloc[-1-i] < df["Close"].iloc[-1] // div * div + 0.75 * div:
+          return f"approaching a milestone ({df['Close'].iloc[-2]} -> {df['Close'].iloc[-1]})"
+      else:
+        return None
+    elif delta < 0 and df["Close"].iloc[-1] % div < div * 0.1:
+      for i in range(1, df.shape[0]):
+        if df["Close"].iloc[-1-i] < df["Close"].iloc[-1] // div * div + 0.1 * div:
+          return None
+        if df["Close"].iloc[-1-i] > df["Close"].iloc[-1] // div + div * 0.25:
+          return f"approaching a milestone ({df['Close'].iloc[-2]} -> {df['Close'].iloc[-1]})"
+      else:
+        return None
+    else:
+      return None
+
+def big_moement_checker(df, period=10, threshold=5):
+  df = df.copy()
+  df["abs_delta"] = df["High"] - df["Low"]
+  df["abs_delta_avg"] = df["abs_delta"].rolling(window=period).mean()
+  if df["abs_delta"].iloc[-1] > df["abs_delta_avg"].iloc[-2] * threshold:
+    if df["Close"].iloc[-1] >= df["Open"].iloc[-1]:
+      return f"big movement ({df['Low'].iloc[-1]} -> {df['High'].iloc[-1]})"
+    else:
+      return f"big movement ({df['High'].iloc[-1]} -> {df['Low'].iloc[-1]})"
   else:
     return None
 
@@ -192,15 +256,36 @@ def main(options):
       else:
         with open(options.log, mode="a") as f:
           f.write(f"{pair}: {latest}\n")
-    cross = cross_checker(
-      df,
-      long=config["checker"]["cross"]["period"]["long"],
-      short=config["checker"]["cross"]["period"]["short"],
-      inclination=config["checker"]["cross"]["inclination"]
-    )
-    if cross:
-      send = True
-      message += "\n{}: {}".format(pair, cross)
+    if options.cross:
+      cross = cross_checker(
+        df,
+        long=config["checker"]["cross"]["period"]["long"],
+        short=config["checker"]["cross"]["period"]["short"],
+        inclination=config["checker"]["cross"]["inclination"]
+      )
+      if cross:
+        send = True
+        message += "\n{}: {}".format(pair, cross)
+    if options.milestone:
+      milestone = milestone_checker(df)
+      if milestone:
+        send = True
+        message += "\n{}: {}".format(pair, milestone)
+    if options.big_movement:
+      big_movement = big_moement_checker(
+        df,
+        period=config["checker"]["big_movement"]["period"],
+        threshold=config["checker"]["big_movement"]["threshold"]
+      )
+      if big_movement:
+        send = True
+        message += "\n{}: {}".format(pair, big_movement)
+  if options.log and options.log_rows:
+    with open(options.log, mode="r") as f:
+      log = f.readlines()
+    if len(log) > options.log_rows:
+      with open(options.log, mode="w") as f:
+        f.write("".join(log[-options.log_rows:]))
   
   # send mail
   if send or not os.path.isfile(options.token) or options.service:

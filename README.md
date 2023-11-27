@@ -33,8 +33,15 @@ googleアカウントへのログインが必要．
 ```
 ./bin/alert.py config.json
 ```
-デフォルトでは15分足でチェックするが，`--interval 5m`などとすることで
-変更可能．ただし，選択できるのは
+実際にチェックを行うためにはチェック項目をコマンドライン引数（`store_true`）で加える必要がある．
+- `--cross`: ゴールデンウロスとデッドクロスの発生をチェックする（短期線と長期線の期間は`config.json`で指定）
+- `--big-movement`: 直近のろうそく足の最高値と最低値の差の大きさが，それ以前の`period`本の平均の`threshold`倍以上であれば通知する（`period`と`threshold`は`config.jsonで指定`）
+- `--milestone`: 心理的節目（USD/JPYが整数円など）に接近した場合と突破した場合に通知をする
+```
+./bin/alert.py config.json --cross --big-movement --milestone
+```
+また，デフォルトでは15分足でチェックするが，`--interval 5m`などとすることで変更可能．
+ただし，選択できるのは
 "1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h", "1d", "1wk", "1mo", "3mo"
 のいずれかである．
 

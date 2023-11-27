@@ -1,1 +1,2 @@
-1,16,31,46 * * * * /usr/bin/python3 /path/to/alert.py
+1,16,31,46 * * * * /usr/bin/python3 /path/to/alert.py /path/to/config.json --cross
+* * * * * /usr/bin/sleep 25; /usr/bin/python3 /path/to/alert.py /path/to/config.json --big-movement --milestone

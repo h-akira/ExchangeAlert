@@ -73,6 +73,12 @@ def parse_args():
     options.state = False
   return options
 
+def _round(num):
+  if num > 3:
+    return round(num, 3)
+  else:
+    return round(num, 5)
+
 def cross_checker(df, long=20, short=9, inclination=False):
   df["long"] = df["Close"].rolling(window=long).mean()
   df["short"] = df["Close"].rolling(window=short).mean()
@@ -127,7 +133,7 @@ def milestone_checker(df):
         if df["Close"].iloc[-1-i] > df["Close"].iloc[-1] // div * div:
           return None
         if df["Close"].iloc[-1-i] < df["Close"].iloc[-1] // div * div - div * 0.1:
-          return f"passed a milestone ({df['Close'].iloc[-2]} -> {df['Close'].iloc[-1]})"
+          return f"passed a milestone ({_round(df['Close'].iloc[-2])} -> {_round(df['Close'].iloc[-1])})"
       else:
         return None
     elif delta < 0:
@@ -135,7 +141,7 @@ def milestone_checker(df):
         if df["Close"].iloc[-1-i] < df["Close"].iloc[-2] // div * div:
           return None
         if df["Close"].iloc[-1-i] > df["Close"].iloc[-2] // div * div + div * 0.1:
-          return f"passed a milestone ({df['Close'].iloc[-2]} -> {df['Close'].iloc[-1]})"
+          return f"passed a milestone ({_round(df['Close'].iloc[-2])} -> {_round(df['Close'].iloc[-1])})"
       else:
         return None
   else:
@@ -144,7 +150,7 @@ def milestone_checker(df):
         if df["Close"].iloc[-1-i] > df["Close"].iloc[-1] // div * div + 0.9 * div:
           return None
         if df["Close"].iloc[-1-i] < df["Close"].iloc[-1] // div * div + 0.75 * div:
-          return f"approaching a milestone ({df['Close'].iloc[-2]} -> {df['Close'].iloc[-1]})"
+          return f"approaching a milestone ({_round(df['Close'].iloc[-2])} -> {_round(df['Close'].iloc[-1])})"
       else:
         return None
     elif delta < 0 and df["Close"].iloc[-1] % div < div * 0.1:
@@ -152,7 +158,7 @@ def milestone_checker(df):
         if df["Close"].iloc[-1-i] < df["Close"].iloc[-1] // div * div + 0.1 * div:
           return None
         if df["Close"].iloc[-1-i] > df["Close"].iloc[-1] // div + div * 0.25:
-          return f"approaching a milestone ({df['Close'].iloc[-2]} -> {df['Close'].iloc[-1]})"
+          return f"approaching a milestone ({_round(df['Close'].iloc[-2])} -> {_round(df['Close'].iloc[-1])})"
       else:
         return None
     else:
@@ -164,9 +170,9 @@ def big_moement_checker(df, period=10, threshold=5):
   df["abs_delta_avg"] = df["abs_delta"].rolling(window=period).mean()
   if df["abs_delta"].iloc[-1] > df["abs_delta_avg"].iloc[-2] * threshold:
     if df["Close"].iloc[-1] >= df["Open"].iloc[-1]:
-      return f"big movement ({df['Low'].iloc[-1]} -> {df['High'].iloc[-1]})"
+      return f"big movement ({_round(df['Low'].iloc[-1])} -> {_round(df['High'].iloc[-1])})"
     else:
-      return f"big movement ({df['High'].iloc[-1]} -> {df['Low'].iloc[-1]})"
+      return f"big movement ({_round(df['High'].iloc[-1])} -> {_round(df['Low'].iloc[-1])})"
   else:
     return None
 

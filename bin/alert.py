@@ -5,12 +5,6 @@
 
 import sys
 import os
-sys.path.append(
-  os.path.join(
-    os.path.dirname(__file__),
-    "../lib/google_api_operator"
-  )
-)
 from google_api_operator.authentication import get_service
 from google_api_operator.gmail import send_mail
 from google.auth.exceptions import RefreshError

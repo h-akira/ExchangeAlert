@@ -6,10 +6,9 @@
 ## セットアップ
 
 Pythonが利用可能な環境下で本リポジトリをCloneする．
-Submoduleを含むので`--recursive`が必要．
 ```
 cd /path/to/任意の場所
-git clone --recursive git@github.com:h-akira/ExchangeAlert.git
+git clone git@github.com:h-akira/ExchangeAlert.git
 ```
 必要に応じて仮想環境を用意したうえで必要なライブラリをインストールする．
 ```
